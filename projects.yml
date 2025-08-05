@@ -1,0 +1,17 @@
+# This is the single authoritative list of all projects for the hub.
+# Each item requires a 'repo' URL.
+# The 'overrides' key is optional and is used for manual customization.
+
+- repo: https://github.com/your-org/word-doc-chatbot-repo
+  overrides:
+    description: "Our flagship AI chatbot. This custom description overrides the default."
+    status: "public"
+    icon: "bi-robot" # You can override anything!
+
+- repo: https://github.com/your-org/pval-explorer-repo
+  # No 'overrides' key needed for this project.
+  # It will use the metadata from its own repo verbatim.
+
+- repo: https://github.com/your-org/medschool-arbortester-repo
+  overrides:
+    url: "https://arbor-tester.prod.azure.com"

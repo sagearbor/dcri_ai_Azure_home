@@ -17,6 +17,11 @@ body {
     color: #0d6efd; /* Bootstrap primary blue */
 }
 
+/* Add a visual cue for hidden cards if they are shown */
+.project-card[data-status='hidden'] .card {
+    border-left: 4px solid #6c757d; /* Bootstrap secondary color */
+}
+
 .btn-primary {
     background-color: #0d6efd;
     border-color: #0d6efd;
