@@ -23,9 +23,9 @@ jobs:
           # Create a temporary file to build our final JSON array
           final_json="[]"
 
-          # Use 'yq' to parse the YAML and loop through each project entry
-          # The 'eval -o=json' converts each YAML entry to a compact JSON object
-          for project_entry in $(yq eval -o=json '.[]' projects.yml); do
+          # Use a robust 'while read' loop to process each project entry line-by-line
+          # This correctly handles spaces in descriptions or other fields.
+          yq eval -o=json '.[]' projects.yml | while IFS= read -r project_entry; do
             # Extract the repo URL and overrides from the JSON entry
             repo_url=$(echo "$project_entry" | jq -r '.repo')
             overrides=$(echo "$project_entry" | jq '.overrides // {}') # Default to empty object if null
@@ -56,7 +56,6 @@ jobs:
           echo "$final_json" > projects.json
 
       - name: Commit and Push if Changed
-        # ... (This step remains exactly the same as before) ...
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
