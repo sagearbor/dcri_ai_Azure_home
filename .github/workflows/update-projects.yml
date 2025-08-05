@@ -1,0 +1,70 @@
+name: Update Hub Projects from projects.yml
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'projects.yml' # The single trigger file
+  workflow_dispatch:
+
+jobs:
+  build-project-list:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Build projects.json from projects.yml
+        id: build
+        run: |
+          # Create a temporary file to build our final JSON array
+          final_json="[]"
+
+          # Use 'yq' to parse the YAML and loop through each project entry
+          # The 'eval -o=json' converts each YAML entry to a compact JSON object
+          for project_entry in $(yq eval -o=json '.[]' projects.yml); do
+            # Extract the repo URL and overrides from the JSON entry
+            repo_url=$(echo "$project_entry" | jq -r '.repo')
+            overrides=$(echo "$project_entry" | jq '.overrides // {}') # Default to empty object if null
+
+            echo "Processing repository: $repo_url"
+            repo_path=$(echo "$repo_url" | sed 's|https://github.com/||')
+            meta_url="https://raw.githubusercontent.com/${repo_path}/main/project-meta.json"
+            
+            # Fetch the base metadata from the project repo
+            base_metadata=$(curl -sfL "$meta_url")
+            
+            if [[ -z "$base_metadata" ]]; then
+              echo "WARNING: No project-meta.json found for $repo_url. Skipping."
+              continue
+            fi
+            
+            # Merge the base metadata with the overrides using jq's addition operator
+            # The overrides will replace any matching keys in the base metadata
+            merged_metadata=$(jq -n --argjson base "$base_metadata" --argjson ovr "$overrides" '$base + $ovr')
+            
+            # Add the final, merged object to our list
+            final_json=$(echo "$final_json" | jq --argjson new_obj "$merged_metadata" '. += [$new_obj]')
+          done
+
+          echo "--- Generated projects.json ---"
+          echo "$final_json" | jq .
+          echo "------------------------------"
+          echo "$final_json" > projects.json
+
+      - name: Commit and Push if Changed
+        # ... (This step remains exactly the same as before) ...
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          if ! git diff --quiet projects.json; then
+            echo "Changes detected in projects.json. Committing..."
+            git add projects.json
+            git commit -m "Automated update of projects.json"
+            git push
+          else
+            echo "No changes to projects.json. Nothing to commit."
+          fi

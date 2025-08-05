@@ -1,0 +1,53 @@
+name: Generate Project Metadata with AI (Batch)
+
+on:
+  workflow_dispatch: # Still triggered manually
+
+jobs:
+  # Job 1: Read the project list and create a JSON array for the matrix
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      # This output will be a JSON string like '["repo-url-1", "repo-url-2"]'
+      repos: ${{ steps.set-matrix.outputs.repos }}
+    steps:
+      - name: Checkout Landing Page Repo
+        uses: actions/checkout@v4
+
+      - name: Generate Matrix from projects.yml
+        id: set-matrix
+        run: |
+          # Use yq (like jq for YAML) to extract all repo URLs into a JSON array
+          # The 'yq e' command evaluates, '.[] | .repo' gets each repo URL
+          # The '-j' flag outputs compact JSON
+          echo "repos=$(yq e '.[] | .repo' -j projects.yml)" >> $GITHUB_OUTPUT
+
+  # Job 2: Run the AI generation for each repo in the matrix
+  generate-metadata:
+    needs: prepare-matrix # This job runs after prepare-matrix is complete
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      models: read
+    strategy:
+      fail-fast: false # Allows other jobs to continue even if one fails
+      matrix:
+        # Create a job for each repo URL from the prepare-matrix output
+        repo_url: ${{ fromJson(needs.prepare-matrix.outputs.repos) }}
+    steps:
+      - name: Checkout Target Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo_url }}
+          path: 'target-repo'
+
+      # ... The rest of the steps (Prepare AI Prompt, Generate, Create PR) are identical ...
+      # Just make sure they use matrix.repo_url instead of github.event.inputs.repo_url
+
+      - name: Create Pull Request with Generated File
+        uses: peter-evans/create-pull-request@v6
+        with:
+          # ... (rest of the PR step is the same, using matrix.repo_url)
+          title: "AI Proposal: Add project-meta.json for ${{ matrix.repo_url }}"
+          # ...
