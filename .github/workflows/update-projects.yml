@@ -30,6 +30,10 @@ jobs:
           PROJECT_COUNT=$(yq eval 'length' projects.yml)
           echo "Found $PROJECT_COUNT projects to process"
           
+          echo "=== Projects in projects.yml ==="
+          yq eval -o=json '.' projects.yml | jq -r '.[] | .repo'
+          echo "================================"
+          
           # Process each project by index to avoid JSON parsing issues
           for i in $(seq 0 $((PROJECT_COUNT-1))); do
             project_entry=$(yq eval -o=json ".[$i]" projects.yml)
@@ -37,7 +41,7 @@ jobs:
             repo_url=$(echo "$project_entry" | jq -r '.repo')
             overrides=$(echo "$project_entry" | jq '.overrides // {}')
             
-            echo "Processing repository: $repo_url"
+            echo "Processing repository $((i+1))/$PROJECT_COUNT: $repo_url"
             repo_path=$(echo "$repo_url" | sed 's|https://github.com/||')
             meta_url="https://raw.githubusercontent.com/${repo_path}/main/project-meta.json"
             
