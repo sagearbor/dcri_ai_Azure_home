@@ -99,21 +99,26 @@ jobs:
         id: prepare-prompt
         run: |
           cat << 'EOF' > ai_prompt.txt
-          You are tasked with generating metadata for a software project based on repository information. 
-          Analyze the following information and generate a JSON object with these fields:
-          - name: Project name (string)
-          - description: Brief project description (string, 1-2 sentences)
-          - technologies: Array of main technologies used (array of strings)
-          - category: Project category like "web-app", "library", "cli-tool", "data-analysis", etc. (string)
-          - status: "active", "maintenance", or "archived" (string)
-          - language: Primary programming language (string)
+          STRICT INSTRUCTIONS: You must respond with ONLY a single line of valid JSON. No markdown, no code blocks, no explanations, no additional text.
           
-          Repository URL: ${{ matrix.repo_url }}
-          README Content: ${{ steps.gather-info.outputs.readme_content }}
-          Package Info: ${{ steps.gather-info.outputs.package_info }}
-          Project Files: ${{ steps.gather-info.outputs.project_files }}
+          Generate metadata for this software project. Use EXACTLY this JSON structure (single line, no formatting):
           
-          Generate ONLY valid JSON, no additional text or explanations.
+          {"name":"PROJECT_NAME","description":"BRIEF_DESCRIPTION","technologies":["TECH1","TECH2"],"category":"CATEGORY","status":"STATUS","language":"LANGUAGE"}
+          
+          Field requirements:
+          - name: Max 50 chars, no quotes in content
+          - description: Max 100 chars, no quotes in content, 1-2 sentences
+          - technologies: Max 5 items, common tech names only
+          - category: MUST be one of: "web-app", "library", "cli-tool", "data-analysis", "api", "mobile-app", "other"
+          - status: MUST be one of: "active", "maintenance", "archived"
+          - language: Primary programming language, single word
+          
+          Repository: ${{ matrix.repo_url }}
+          README: ${{ steps.gather-info.outputs.readme_content }}
+          Package: ${{ steps.gather-info.outputs.package_info }}
+          Files: ${{ steps.gather-info.outputs.project_files }}
+          
+          RESPOND WITH ONLY THE JSON LINE. NO OTHER TEXT.
           EOF
 
       - name: Generate Metadata with AI
@@ -151,26 +156,20 @@ jobs:
           echo "API Response: $RESPONSE"
           
           # Extract the generated JSON from the response
-          RAW_CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content' 2>/dev/null || echo "{\"error\": \"Failed to generate metadata\"}")
+          RAW_CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content' 2>/dev/null || echo '{"error":"API_failed"}')
           
-          echo "Raw AI response: $RAW_CONTENT"
+          echo "AI response: $RAW_CONTENT"
           
-          # Extract JSON from markdown code blocks if present
-          METADATA=$(echo "$RAW_CONTENT" | sed -n '/```json/,/```/p' | sed '1d;$d' | tr -d '\n' | tr -d '\r')
-          
-          # If no markdown blocks, use the raw content
-          if [ -z "$METADATA" ] || [ "$METADATA" = "" ]; then
-            METADATA=$(echo "$RAW_CONTENT" | tr -d '\n' | tr -d '\r')
-          fi
-          
-          echo "Cleaned metadata: $METADATA"
+          # Clean the response (remove any whitespace/newlines)
+          METADATA=$(echo "$RAW_CONTENT" | tr -d '\n\r\t' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
           
           # Validate it's valid JSON
           if echo "$METADATA" | jq . > /dev/null 2>&1; then
-            echo "✅ Valid JSON generated"
+            echo "✅ Valid JSON: $METADATA"
           else
-            echo "❌ Invalid JSON, using fallback"
-            METADATA="{\"error\": \"Invalid JSON generated\", \"raw_response\": \"$(echo "$RAW_CONTENT" | tr -d '\n' | tr '"' '\"')\"}"
+            echo "❌ Invalid JSON from AI, using fallback"
+            REPO_NAME=$(basename "${{ matrix.repo_url }}")
+            METADATA="{\"name\":\"$REPO_NAME\",\"description\":\"Auto-generated metadata\",\"technologies\":[\"unknown\"],\"category\":\"other\",\"status\":\"active\",\"language\":\"unknown\"}"
           fi
           
           # Save the metadata (properly escaped for GitHub Actions)
@@ -185,8 +184,10 @@ jobs:
         run: |
           cd target-repo
           
-          # Create the project-meta.json file with generated metadata
-          echo '${{ steps.generate-metadata.outputs.metadata }}' > project-meta.json
+          # Create the project-meta.json file with generated metadata using a heredoc to avoid quote issues
+          cat << 'EOF' > project-meta.json
+          ${{ steps.generate-metadata.outputs.metadata }}
+          EOF
           
           # Validate it's valid JSON
           if ! jq . project-meta.json > /dev/null 2>&1; then
