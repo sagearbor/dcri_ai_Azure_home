@@ -26,10 +26,13 @@ jobs:
           # Initialize the JSON array
           echo "[]" > projects.json
           
-          # Process each project entry
-          yq eval -o=json '.[]' projects.yml > temp_projects.json
+          # Process each project entry - get the count first
+          PROJECT_COUNT=$(yq eval 'length' projects.yml)
+          echo "Found $PROJECT_COUNT projects to process"
           
-          while IFS= read -r project_entry; do
+          # Process each project by index to avoid JSON parsing issues
+          for i in $(seq 0 $((PROJECT_COUNT-1))); do
+            project_entry=$(yq eval -o=json ".[$i]" projects.yml)
             # Extract the repo URL and overrides
             repo_url=$(echo "$project_entry" | jq -r '.repo')
             overrides=$(echo "$project_entry" | jq '.overrides // {}')
@@ -68,10 +71,7 @@ jobs:
             # Add to the projects array
             jq --argjson new_project "$frontend_ready" '. += [$new_project]' projects.json > temp.json && mv temp.json projects.json
             
-          done < temp_projects.json
-          
-          # Clean up
-          rm -f temp_projects.json
+          done
           
           echo "--- Generated projects.json ---"
           cat projects.json | jq .
