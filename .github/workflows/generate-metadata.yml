@@ -211,43 +211,26 @@ jobs:
           echo "Created project-meta.json:"
           cat project-meta.json
 
-      - name: Create Pull Request with Generated File
-        uses: peter-evans/create-pull-request@v6
-        with:
-          path: 'target-repo'
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          title: "AI Proposal: Add project-meta.json for ${{ matrix.repo_url }}"
-          body: |
-            ## Summary
-            Auto-generated project metadata file for the project hub.
-            
-            This PR adds a `project-meta.json` file containing metadata about this repository.
-            
-            🤖 Generated with [GitHub Actions](https://github.com/features/actions)
-          branch: add-project-metadata
-          commit-message: "Add project-meta.json for project hub integration"
+      - name: Commit Generated File Directly
+        run: |
+          cd target-repo
+          
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Add and commit the file
+          git add project-meta.json
+          
+          # Only commit if there are changes
+          if ! git diff --cached --quiet; then
+            git commit -m "Add project-meta.json for project hub integration
 
-      # TODO: Uncomment this for direct commits once PR approach is working
-      # - name: Commit Generated File Directly
-      #   run: |
-      #     cd target-repo
-      #     
-      #     # Configure git
-      #     git config user.name "github-actions[bot]"
-      #     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      #     
-      #     # Add and commit the file
-      #     git add project-meta.json
-      #     
-      #     # Only commit if there are changes
-      #     if ! git diff --cached --quiet; then
-      #       git commit -m "Add project-meta.json for project hub integration
-      # 
-      #       🤖 Generated with GitHub Actions from repository analysis"
-      #       
-      #       # Push directly to main branch
-      #       git push origin HEAD:main
-      #       echo "✅ Successfully committed project-meta.json to ${{ matrix.repo_url }}"
-      #     else
-      #       echo "ℹ️ No changes to commit for ${{ matrix.repo_url }}"
-      #     fi
+            🤖 Generated with GitHub Actions from repository analysis"
+            
+            # Push directly to main branch
+            git push origin HEAD:main
+            echo "✅ Successfully committed project-meta.json to ${{ matrix.repo_url }}"
+          else
+            echo "ℹ️ No changes to commit for ${{ matrix.repo_url }}"
+          fi
