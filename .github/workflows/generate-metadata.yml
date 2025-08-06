@@ -90,10 +90,26 @@ jobs:
             PROJECT_FILES="$PROJECT_FILES PHP project with composer.json. "
           fi
           
+          # Look for deployment/hosting indicators
+          DEPLOYMENT_INFO=""
+          if [ -f "Dockerfile" ]; then
+            DEPLOYMENT_INFO="$DEPLOYMENT_INFO Has Dockerfile for containerization. "
+          fi
+          if [ -f "docker-compose.yml" ] || [ -f "docker-compose.yaml" ]; then
+            DEPLOYMENT_INFO="$DEPLOYMENT_INFO Has docker-compose for multi-service deployment. "
+          fi
+          if [ -f ".github/workflows/deploy.yml" ] || [ -f ".github/workflows/azure-deploy.yml" ]; then
+            DEPLOYMENT_INFO="$DEPLOYMENT_INFO Has GitHub Actions deployment workflow. "
+          fi
+          if [ -f "azure-pipelines.yml" ]; then
+            DEPLOYMENT_INFO="$DEPLOYMENT_INFO Has Azure Pipelines configuration. "
+          fi
+          
           # Save gathered information
           echo "readme_content=$README_CONTENT" >> $GITHUB_OUTPUT
           echo "package_info=$PACKAGE_INFO" >> $GITHUB_OUTPUT  
           echo "project_files=$PROJECT_FILES" >> $GITHUB_OUTPUT
+          echo "deployment_info=$DEPLOYMENT_INFO" >> $GITHUB_OUTPUT
 
       - name: Prepare AI Prompt
         id: prepare-prompt
@@ -103,7 +119,7 @@ jobs:
           
           Generate metadata for this software project. Use EXACTLY this JSON structure (single line, no formatting):
           
-          {"name":"PROJECT_NAME","description":"BRIEF_DESCRIPTION","technologies":["TECH1","TECH2"],"category":"CATEGORY","status":"STATUS","language":"LANGUAGE"}
+          {"name":"PROJECT_NAME","description":"BRIEF_DESCRIPTION","technologies":["TECH1","TECH2"],"category":"CATEGORY","status":"STATUS","language":"LANGUAGE","hosted_url":"URL_OR_NULL"}
           
           Field requirements:
           - name: Max 50 chars, no quotes in content
@@ -112,11 +128,13 @@ jobs:
           - category: MUST be one of: "web-app", "library", "cli-tool", "data-analysis", "api", "mobile-app", "other"
           - status: MUST be one of: "active", "maintenance", "archived"
           - language: Primary programming language, single word
+          - hosted_url: If this is a web app that can be deployed, set to null (we'll add the URL later when deployed). Otherwise set to null.
           
           Repository: ${{ matrix.repo_url }}
           README: ${{ steps.gather-info.outputs.readme_content }}
           Package: ${{ steps.gather-info.outputs.package_info }}
           Files: ${{ steps.gather-info.outputs.project_files }}
+          Deployment: ${{ steps.gather-info.outputs.deployment_info }}
           
           RESPOND WITH ONLY THE JSON LINE. NO OTHER TEXT.
           EOF
@@ -180,14 +198,30 @@ jobs:
           # Also save to file for debugging
           echo "$METADATA" > generated_metadata.json
 
-      - name: Create project-meta.json File
+      - name: Preserve Hosted URLs and Create project-meta.json File
         run: |
           cd target-repo
           
-          # Create the project-meta.json file with generated metadata using a heredoc to avoid quote issues
-          cat << 'EOF' > project-meta.json
-          ${{ steps.generate-metadata.outputs.metadata }}
-          EOF
+          # Check if project-meta.json already exists and preserve hosted_url
+          EXISTING_HOSTED_URL="null"
+          if [ -f "project-meta.json" ]; then
+            EXISTING_HOSTED_URL=$(jq -r '.hosted_url // "null"' project-meta.json 2>/dev/null || echo "null")
+            echo "Found existing hosted_url: $EXISTING_HOSTED_URL"
+          fi
+          
+          # Get AI-generated metadata
+          AI_METADATA='${{ steps.generate-metadata.outputs.metadata }}'
+          
+          # Preserve existing hosted_url if it's not null, otherwise use AI-generated value
+          if [ "$EXISTING_HOSTED_URL" != "null" ] && [ "$EXISTING_HOSTED_URL" != "" ]; then
+            echo "Preserving existing hosted_url: $EXISTING_HOSTED_URL"
+            FINAL_METADATA=$(echo "$AI_METADATA" | jq --arg url "$EXISTING_HOSTED_URL" '.hosted_url = $url')
+          else
+            FINAL_METADATA="$AI_METADATA"
+          fi
+          
+          # Create the project-meta.json file
+          echo "$FINAL_METADATA" > project-meta.json
           
           # Validate it's valid JSON
           if ! jq . project-meta.json > /dev/null 2>&1; then

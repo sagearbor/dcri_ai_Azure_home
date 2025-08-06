@@ -20,40 +20,62 @@ jobs:
       - name: Build projects.json from projects.yml
         id: build
         run: |
-          # Create a temporary file to build our final JSON array
-          final_json="[]"
-
-          # Use a robust 'while read' loop to process each project entry line-by-line
-          # This correctly handles spaces in descriptions or other fields.
-          yq eval -o=json '.[]' projects.yml | while IFS= read -r project_entry; do
-            # Extract the repo URL and overrides from the JSON entry
+          # Create projects.json with proper array structure for the frontend
+          echo "Building projects.json from projects.yml..."
+          
+          # Initialize the JSON array
+          echo "[]" > projects.json
+          
+          # Process each project entry
+          yq eval -o=json '.[]' projects.yml > temp_projects.json
+          
+          while IFS= read -r project_entry; do
+            # Extract the repo URL and overrides
             repo_url=$(echo "$project_entry" | jq -r '.repo')
-            overrides=$(echo "$project_entry" | jq '.overrides // {}') # Default to empty object if null
-
+            overrides=$(echo "$project_entry" | jq '.overrides // {}')
+            
             echo "Processing repository: $repo_url"
             repo_path=$(echo "$repo_url" | sed 's|https://github.com/||')
             meta_url="https://raw.githubusercontent.com/${repo_path}/main/project-meta.json"
             
             # Fetch the base metadata from the project repo
-            base_metadata=$(curl -sfL "$meta_url")
+            echo "Fetching metadata from: $meta_url"
+            base_metadata=$(curl -sfL "$meta_url" || echo '{}')
             
-            if [[ -z "$base_metadata" ]]; then
-              echo "WARNING: No project-meta.json found for $repo_url. Skipping."
-              continue
+            if [[ "$base_metadata" == "{}" ]] || [[ -z "$base_metadata" ]]; then
+              echo "WARNING: No project-meta.json found for $repo_url. Using fallback metadata."
+              repo_name=$(basename "$repo_url")
+              base_metadata="{\"name\":\"$repo_name\",\"description\":\"Project repository\",\"technologies\":[\"unknown\"],\"category\":\"other\",\"status\":\"active\",\"language\":\"unknown\"}"
             fi
             
-            # Merge the base metadata with the overrides using jq's addition operator
-            # The overrides will replace any matching keys in the base metadata
-            merged_metadata=$(jq -n --argjson base "$base_metadata" --argjson ovr "$overrides" '$base + $ovr')
+            # Transform metadata to match frontend expectations and add hosted URL logic
+            frontend_ready=$(echo "$base_metadata" | jq --argjson overrides "$overrides" --arg repo_url "$repo_url" '
+            {
+              title: (.name // "Unknown Project"),
+              description: (.description // "No description available"),
+              icon: (.icon // "bi-box-seam"),
+              url: (if .hosted_url then .hosted_url else $repo_url end),
+              status: (.status // "active"),
+              tags: {
+                technology: (.technologies // ["unknown"]),
+                category: [(.category // "other")],
+                language: [(.language // "unknown")]
+              }
+            } + $overrides')
             
-            # Add the final, merged object to our list
-            final_json=$(echo "$final_json" | jq --argjson new_obj "$merged_metadata" '. += [$new_obj]')
-          done
-
+            echo "Generated frontend data: $frontend_ready"
+            
+            # Add to the projects array
+            jq --argjson new_project "$frontend_ready" '. += [$new_project]' projects.json > temp.json && mv temp.json projects.json
+            
+          done < temp_projects.json
+          
+          # Clean up
+          rm -f temp_projects.json
+          
           echo "--- Generated projects.json ---"
-          echo "$final_json" | jq .
+          cat projects.json | jq .
           echo "------------------------------"
-          echo "$final_json" > projects.json
 
       - name: Commit and Push if Changed
         run: |
