@@ -81,11 +81,31 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          if ! git diff --quiet projects.json; then
-            echo "Changes detected in projects.json. Committing..."
-            git add projects.json
-            git commit -m "Automated update of projects.json"
-            git push
+          
+          echo "=== Git status ==="
+          git status
+          
+          echo "=== projects.json content ==="
+          if [ -f "projects.json" ]; then
+            echo "File exists:"
+            cat projects.json
+            echo "=== Git diff ==="
+            git diff projects.json || echo "No diff (new file)"
           else
-            echo "No changes to projects.json. Nothing to commit."
+            echo "projects.json file not found!"
+            ls -la
+          fi
+          
+          if [ -f "projects.json" ]; then
+            git add projects.json
+            if git diff --cached --quiet; then
+              echo "No changes to commit."
+            else
+              echo "Changes detected. Committing..."
+              git commit -m "Automated update of projects.json"
+              git push
+              echo "✅ Successfully updated projects.json"
+            fi
+          else
+            echo "❌ projects.json was not created"
           fi
