@@ -18,9 +18,9 @@ jobs:
         id: set-matrix
         run: |
           # Use yq (like jq for YAML) to extract all repo URLs into a JSON array
-          # The 'yq e' command evaluates, '.[] | .repo' gets each repo URL
-          # The '-j' flag outputs compact JSON
-          echo "repos=$(yq e '.[] | .repo' -j projects.yml)" >> $GITHUB_OUTPUT
+          # The 'yq e' command evaluates, '[.[] | .repo]' creates a proper JSON array
+          # The '-o=json' flag outputs compact JSON
+          echo "repos=$(yq e '[.[] | .repo]' -o=json projects.yml)" >> $GITHUB_OUTPUT
 
   # Job 2: Run the AI generation for each repo in the matrix
   generate-metadata:
