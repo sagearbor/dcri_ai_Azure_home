@@ -151,12 +151,32 @@ jobs:
           echo "API Response: $RESPONSE"
           
           # Extract the generated JSON from the response
-          METADATA=$(echo "$RESPONSE" | jq -r '.choices[0].message.content' 2>/dev/null || echo "{\"error\": \"Failed to generate metadata\", \"api_response\": \"$RESPONSE\"}")
+          RAW_CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content' 2>/dev/null || echo "{\"error\": \"Failed to generate metadata\"}")
           
-          echo "Generated metadata: $METADATA"
+          echo "Raw AI response: $RAW_CONTENT"
           
-          # Save the metadata
-          echo "metadata=$METADATA" >> $GITHUB_OUTPUT
+          # Extract JSON from markdown code blocks if present
+          METADATA=$(echo "$RAW_CONTENT" | sed -n '/```json/,/```/p' | sed '1d;$d' | tr -d '\n' | tr -d '\r')
+          
+          # If no markdown blocks, use the raw content
+          if [ -z "$METADATA" ] || [ "$METADATA" = "" ]; then
+            METADATA=$(echo "$RAW_CONTENT" | tr -d '\n' | tr -d '\r')
+          fi
+          
+          echo "Cleaned metadata: $METADATA"
+          
+          # Validate it's valid JSON
+          if echo "$METADATA" | jq . > /dev/null 2>&1; then
+            echo "✅ Valid JSON generated"
+          else
+            echo "❌ Invalid JSON, using fallback"
+            METADATA="{\"error\": \"Invalid JSON generated\", \"raw_response\": \"$(echo "$RAW_CONTENT" | tr -d '\n' | tr '"' '\"')\"}"
+          fi
+          
+          # Save the metadata (properly escaped for GitHub Actions)
+          echo "metadata<<EOF" >> $GITHUB_OUTPUT
+          echo "$METADATA" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           
           # Also save to file for debugging
           echo "$METADATA" > generated_metadata.json
