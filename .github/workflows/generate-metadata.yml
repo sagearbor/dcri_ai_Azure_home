@@ -121,19 +121,30 @@ jobs:
         run: |
           # Use GitHub Models API to generate metadata
           echo "Calling GitHub Models API..."
+          
+          # Read and properly escape the prompt content
+          PROMPT_CONTENT=$(cat ai_prompt.txt | jq -Rs .)
+          
+          # Create the JSON payload properly
+          PAYLOAD=$(jq -n \
+            --arg model "gpt-4o-mini" \
+            --argjson prompt "$PROMPT_CONTENT" \
+            '{
+              "model": $model,
+              "messages": [
+                {
+                  "role": "user",
+                  "content": $prompt
+                }
+              ],
+              "max_tokens": 500
+            }')
+          
+          echo "Sending payload to API..."
           RESPONSE=$(curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"model\": \"gpt-4o-mini\",
-              \"messages\": [
-                {
-                  \"role\": \"user\",
-                  \"content\": \"$(cat ai_prompt.txt)\"
-                }
-              ],
-              \"max_tokens\": 500
-            }" \
+            -d "$PAYLOAD" \
             "https://models.inference.ai.azure.com/chat/completions")
           
           # Log the response for debugging
@@ -194,3 +205,28 @@ jobs:
             🤖 Generated with [GitHub Actions](https://github.com/features/actions)
           branch: add-project-metadata
           commit-message: "Add project-meta.json for project hub integration"
+
+      # TODO: Uncomment this for direct commits once PR approach is working
+      # - name: Commit Generated File Directly
+      #   run: |
+      #     cd target-repo
+      #     
+      #     # Configure git
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      #     
+      #     # Add and commit the file
+      #     git add project-meta.json
+      #     
+      #     # Only commit if there are changes
+      #     if ! git diff --cached --quiet; then
+      #       git commit -m "Add project-meta.json for project hub integration
+      # 
+      #       🤖 Generated with GitHub Actions from repository analysis"
+      #       
+      #       # Push directly to main branch
+      #       git push origin HEAD:main
+      #       echo "✅ Successfully committed project-meta.json to ${{ matrix.repo_url }}"
+      #     else
+      #       echo "ℹ️ No changes to commit for ${{ matrix.repo_url }}"
+      #     fi
