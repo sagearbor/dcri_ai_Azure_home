@@ -49,12 +49,146 @@ jobs:
           repository: ${{ steps.repo-name.outputs.repo_path }}
           path: 'target-repo'
 
-      # ... The rest of the steps (Prepare AI Prompt, Generate, Create PR) are identical ...
-      # Just make sure they use matrix.repo_url instead of github.event.inputs.repo_url
+      - name: Gather Repository Information
+        id: gather-info
+        run: |
+          cd target-repo
+          
+          # Initialize info variables
+          README_CONTENT=""
+          PACKAGE_INFO=""
+          PROJECT_FILES=""
+          
+          # Look for README files
+          for readme in README.md readme.md README.txt README README.rst; do
+            if [ -f "$readme" ]; then
+              echo "Found README: $readme"
+              README_CONTENT=$(head -50 "$readme" | tr '\n' ' ' | tr '"' "'" | cut -c1-2000)
+              break
+            fi
+          done
+          
+          # Look for package.json (Node.js projects)
+          if [ -f "package.json" ]; then
+            PACKAGE_INFO=$(cat package.json | jq -r '{name, description, dependencies, scripts}' 2>/dev/null || echo "")
+          fi
+          
+          # Look for requirements.txt (Python projects)
+          if [ -f "requirements.txt" ]; then
+            PROJECT_FILES="$PROJECT_FILES Python project with requirements.txt. "
+          fi
+          
+          # Look for other indicators
+          if [ -f "Cargo.toml" ]; then
+            PROJECT_FILES="$PROJECT_FILES Rust project with Cargo.toml. "
+          elif [ -f "go.mod" ]; then
+            PROJECT_FILES="$PROJECT_FILES Go project with go.mod. "
+          elif [ -f "pom.xml" ]; then
+            PROJECT_FILES="$PROJECT_FILES Java project with pom.xml. "
+          elif [ -f "composer.json" ]; then
+            PROJECT_FILES="$PROJECT_FILES PHP project with composer.json. "
+          fi
+          
+          # Save gathered information
+          echo "readme_content=$README_CONTENT" >> $GITHUB_OUTPUT
+          echo "package_info=$PACKAGE_INFO" >> $GITHUB_OUTPUT  
+          echo "project_files=$PROJECT_FILES" >> $GITHUB_OUTPUT
+
+      - name: Prepare AI Prompt
+        id: prepare-prompt
+        run: |
+          cat << 'EOF' > ai_prompt.txt
+          You are tasked with generating metadata for a software project based on repository information. 
+          Analyze the following information and generate a JSON object with these fields:
+          - name: Project name (string)
+          - description: Brief project description (string, 1-2 sentences)
+          - technologies: Array of main technologies used (array of strings)
+          - category: Project category like "web-app", "library", "cli-tool", "data-analysis", etc. (string)
+          - status: "active", "maintenance", or "archived" (string)
+          - language: Primary programming language (string)
+          
+          Repository URL: ${{ matrix.repo_url }}
+          README Content: ${{ steps.gather-info.outputs.readme_content }}
+          Package Info: ${{ steps.gather-info.outputs.package_info }}
+          Project Files: ${{ steps.gather-info.outputs.project_files }}
+          
+          Generate ONLY valid JSON, no additional text or explanations.
+          EOF
+
+      - name: Generate Metadata with AI
+        id: generate-metadata
+        run: |
+          # Use GitHub Models API to generate metadata
+          echo "Calling GitHub Models API..."
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"model\": \"gpt-4o-mini\",
+              \"messages\": [
+                {
+                  \"role\": \"user\",
+                  \"content\": \"$(cat ai_prompt.txt)\"
+                }
+              ],
+              \"max_tokens\": 500
+            }" \
+            "https://models.inference.ai.azure.com/chat/completions")
+          
+          # Log the response for debugging
+          echo "API Response: $RESPONSE"
+          
+          # Extract the generated JSON from the response
+          METADATA=$(echo "$RESPONSE" | jq -r '.choices[0].message.content' 2>/dev/null || echo "{\"error\": \"Failed to generate metadata\", \"api_response\": \"$RESPONSE\"}")
+          
+          echo "Generated metadata: $METADATA"
+          
+          # Save the metadata
+          echo "metadata=$METADATA" >> $GITHUB_OUTPUT
+          
+          # Also save to file for debugging
+          echo "$METADATA" > generated_metadata.json
+
+      - name: Create project-meta.json File
+        run: |
+          cd target-repo
+          
+          # Create the project-meta.json file with generated metadata
+          echo '${{ steps.generate-metadata.outputs.metadata }}' > project-meta.json
+          
+          # Validate it's valid JSON
+          if ! jq . project-meta.json > /dev/null 2>&1; then
+            echo "Generated invalid JSON, creating fallback metadata"
+            REPO_NAME=$(basename "${{ matrix.repo_url }}")
+            CURRENT_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            cat << EOF > project-meta.json
+          {
+            "name": "$REPO_NAME",
+            "description": "Repository from ${{ matrix.repo_url }}",
+            "technologies": ["unknown"],
+            "category": "other",
+            "status": "active",
+            "language": "unknown",
+            "generated_by": "github-actions",
+            "generated_at": "$CURRENT_DATE"
+          }
+          EOF
+          fi
+          
+          echo "Created project-meta.json:"
+          cat project-meta.json
 
       - name: Create Pull Request with Generated File
         uses: peter-evans/create-pull-request@v6
         with:
-          # ... (rest of the PR step is the same, using matrix.repo_url)
+          path: 'target-repo'
           title: "AI Proposal: Add project-meta.json for ${{ matrix.repo_url }}"
-          # ...
+          body: |
+            ## Summary
+            Auto-generated project metadata file for the project hub.
+            
+            This PR adds a `project-meta.json` file containing metadata about this repository.
+            
+            🤖 Generated with [GitHub Actions](https://github.com/features/actions)
+          branch: add-project-metadata
+          commit-message: "Add project-meta.json for project hub integration"
