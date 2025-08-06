@@ -36,10 +36,17 @@ jobs:
         # Create a job for each repo URL from the prepare-matrix output
         repo_url: ${{ fromJson(needs.prepare-matrix.outputs.repos) }}
     steps:
+      - name: Extract Repository Name
+        id: repo-name
+        run: |
+          # Extract owner/repo from full GitHub URL
+          REPO_PATH=$(echo "${{ matrix.repo_url }}" | sed 's|https://github.com/||')
+          echo "repo_path=$REPO_PATH" >> $GITHUB_OUTPUT
+          
       - name: Checkout Target Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ matrix.repo_url }}
+          repository: ${{ steps.repo-name.outputs.repo_path }}
           path: 'target-repo'
 
       # ... The rest of the steps (Prepare AI Prompt, Generate, Create PR) are identical ...
