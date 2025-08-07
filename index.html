@@ -16,19 +16,43 @@
         </div>
     </nav>
 
-    <main class="container my-5">
-        <div class="text-center mb-5">
-            <h1 class="display-4">Welcome to the DCRI AI Project Hub</h1>
-            <p class="lead text-muted">A collection of innovative web applications and tools from the DCRI AI team.</p>
-        </div>
-
-        <div id="filters-container" class="row g-3 mb-5 p-4 rounded-3 border bg-dark-subtle">
-             <div class="col-12">
-                <h5 class="text-white"><i class="bi bi-funnel-fill me-2"></i>Filter Projects</h5>
+    <main class="d-flex">
+        <!-- Sidebar for filters -->
+        <div id="sidebar" class="sidebar bg-dark-subtle border-end">
+            <div class="sidebar-header p-3 border-bottom">
+                <h5 class="mb-0"><i class="bi bi-funnel-fill me-2"></i>Filter Projects</h5>
+                <button class="btn btn-sm btn-outline-secondary d-md-none" id="closeSidebar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div id="filters-container" class="sidebar-content p-3">
+                <div class="col-12">
+                    <div class="text-muted small mb-3" id="result-count">Loading...</div>
+                </div>
             </div>
         </div>
 
-        <div id="projects-container" class="row g-4"></div>
+        <!-- Main content area -->
+        <div id="main-content" class="flex-grow-1">
+            <!-- Header with hamburger menu -->
+            <div class="content-header bg-body-tertiary border-bottom p-3 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-outline-secondary me-3" id="toggleSidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div>
+                        <h1 class="h3 mb-0">DCRI AI Project Hub</h1>
+                        <p class="text-muted small mb-0">Innovative web applications and tools</p>
+                    </div>
+                </div>
+                <div id="project-count-badge" class="badge bg-primary">0 projects</div>
+            </div>
+
+            <!-- Projects grid -->
+            <div class="content-body p-4">
+                <div id="projects-container" class="row g-4"></div>
+            </div>
+        </div>
     </main>
 
     <footer class="bg-dark text-white text-center py-3 mt-5">

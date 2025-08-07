@@ -111,6 +111,70 @@ jobs:
           echo "project_files=$PROJECT_FILES" >> $GITHUB_OUTPUT
           echo "deployment_info=$DEPLOYMENT_INFO" >> $GITHUB_OUTPUT
 
+      - name: Gather Git Activity Metrics  
+        id: git-metrics
+        run: |
+          cd target-repo
+          
+          # Get current date for calculations
+          CURRENT_DATE=$(date -u +%Y-%m-%d)
+          THIRTY_DAYS_AGO=$(date -u -d '30 days ago' +%Y-%m-%d)
+          NINETY_DAYS_AGO=$(date -u -d '90 days ago' +%Y-%m-%d)
+          
+          # Count commits in last 30 days
+          COMMITS_30D=$(git rev-list --count --since="$THIRTY_DAYS_AGO" HEAD 2>/dev/null || echo "0")
+          
+          # Count commits in last 90 days  
+          COMMITS_90D=$(git rev-list --count --since="$NINETY_DAYS_AGO" HEAD 2>/dev/null || echo "0")
+          
+          # Get last commit date
+          LAST_COMMIT=$(git log -1 --format=%ci 2>/dev/null || echo "unknown")
+          LAST_COMMIT_DATE=$(echo "$LAST_COMMIT" | cut -d' ' -f1)
+          
+          # Count unique contributors in last 90 days
+          CONTRIBUTORS=$(git shortlog -sn --since="$NINETY_DAYS_AGO" 2>/dev/null | wc -l || echo "0")
+          
+          # Count releases/tags in last 90 days
+          RECENT_RELEASES=$(git tag --sort=-creatordate --merged HEAD 2>/dev/null | head -10 | while read tag; do
+            TAG_DATE=$(git log -1 --format=%ci "$tag" 2>/dev/null | cut -d' ' -f1)
+            if [[ "$TAG_DATE" > "$NINETY_DAYS_AGO" ]]; then
+              echo "$tag"
+            fi
+          done | wc -l || echo "0")
+          
+          # Calculate days since last commit
+          if [[ "$LAST_COMMIT_DATE" != "unknown" ]]; then
+            DAYS_SINCE_COMMIT=$(( ( $(date -u -d "$CURRENT_DATE" +%s) - $(date -u -d "$LAST_COMMIT_DATE" +%s) ) / 86400 ))
+          else
+            DAYS_SINCE_COMMIT=999
+          fi
+          
+          # Calculate hotness score (0-100)
+          # Factors: recent commits (40%), contributor count (20%), recency (30%), releases (10%)
+          COMMIT_SCORE=$((COMMITS_30D > 20 ? 40 : COMMITS_30D * 2))
+          CONTRIBUTOR_SCORE=$((CONTRIBUTORS > 5 ? 20 : CONTRIBUTORS * 4))
+          RECENCY_SCORE=$((DAYS_SINCE_COMMIT < 7 ? 30 : DAYS_SINCE_COMMIT < 30 ? 20 : DAYS_SINCE_COMMIT < 90 ? 10 : 0))
+          RELEASE_SCORE=$((RECENT_RELEASES > 2 ? 10 : RECENT_RELEASES * 5))
+          HOTNESS_SCORE=$((COMMIT_SCORE + CONTRIBUTOR_SCORE + RECENCY_SCORE + RELEASE_SCORE))
+          
+          echo "Git Activity Metrics:"
+          echo "Commits (30d): $COMMITS_30D"
+          echo "Commits (90d): $COMMITS_90D" 
+          echo "Last commit: $LAST_COMMIT_DATE"
+          echo "Days since commit: $DAYS_SINCE_COMMIT"
+          echo "Contributors: $CONTRIBUTORS"
+          echo "Recent releases: $RECENT_RELEASES"
+          echo "Hotness score: $HOTNESS_SCORE"
+          
+          # Save metrics
+          echo "commits_30d=$COMMITS_30D" >> $GITHUB_OUTPUT
+          echo "commits_90d=$COMMITS_90D" >> $GITHUB_OUTPUT
+          echo "last_commit=$LAST_COMMIT_DATE" >> $GITHUB_OUTPUT
+          echo "days_since_commit=$DAYS_SINCE_COMMIT" >> $GITHUB_OUTPUT
+          echo "contributors=$CONTRIBUTORS" >> $GITHUB_OUTPUT
+          echo "recent_releases=$RECENT_RELEASES" >> $GITHUB_OUTPUT
+          echo "hotness_score=$HOTNESS_SCORE" >> $GITHUB_OUTPUT
+
       - name: Prepare AI Prompt
         id: prepare-prompt
         run: |
@@ -119,7 +183,7 @@ jobs:
           
           Generate metadata for this software project. Use EXACTLY this JSON structure (single line, no formatting):
           
-          {"name":"PROJECT_NAME","description":"BRIEF_DESCRIPTION","technologies":["TECH1","TECH2","TECH3"],"category":["CAT1","CAT2"],"status":"STATUS","language":["LANG1","LANG2"],"hosted_url":null}
+          {"name":"PROJECT_NAME","description":"BRIEF_DESCRIPTION","technologies":["TECH1","TECH2","TECH3"],"category":["CAT1","CAT2"],"status":"STATUS","language":["LANG1","LANG2"],"hosted_url":null,"activity":{"commits_30d":N,"last_commit":"YYYY-MM-DD","contributors":N,"hotness_score":N}}
           
           Field requirements:
           - name: Max 50 chars, no quotes in content
@@ -129,12 +193,14 @@ jobs:
           - status: MUST be one of: "active", "maintenance", "archived"
           - language: Array of programming languages used (primary first)
           - hosted_url: Set to null (will be added when deployed)
+          - activity: Object with git metrics (use the provided values exactly)
           
           Repository: ${{ matrix.repo_url }}
           README: ${{ steps.gather-info.outputs.readme_content }}
           Package: ${{ steps.gather-info.outputs.package_info }}
           Files: ${{ steps.gather-info.outputs.project_files }}
           Deployment: ${{ steps.gather-info.outputs.deployment_info }}
+          Git Activity: commits_30d=${{ steps.git-metrics.outputs.commits_30d }}, last_commit=${{ steps.git-metrics.outputs.last_commit }}, contributors=${{ steps.git-metrics.outputs.contributors }}, hotness_score=${{ steps.git-metrics.outputs.hotness_score }}
           
           RESPOND WITH ONLY THE JSON LINE. NO OTHER TEXT.
           EOF
@@ -209,15 +275,24 @@ jobs:
             echo "Found existing hosted_url: $EXISTING_HOSTED_URL"
           fi
           
-          # Get AI-generated metadata
+          # Get AI-generated metadata  
           AI_METADATA='${{ steps.generate-metadata.outputs.metadata }}'
           
-          # Preserve existing hosted_url if it's not null, otherwise use AI-generated value
+          # Inject real git metrics into the AI-generated metadata
+          FINAL_METADATA=$(echo "$AI_METADATA" | jq \
+            --arg commits_30d "${{ steps.git-metrics.outputs.commits_30d }}" \
+            --arg last_commit "${{ steps.git-metrics.outputs.last_commit }}" \
+            --arg contributors "${{ steps.git-metrics.outputs.contributors }}" \
+            --arg hotness_score "${{ steps.git-metrics.outputs.hotness_score }}" \
+            '.activity.commits_30d = ($commits_30d | tonumber) | 
+             .activity.last_commit = $last_commit | 
+             .activity.contributors = ($contributors | tonumber) | 
+             .activity.hotness_score = ($hotness_score | tonumber)')
+          
+          # Preserve existing hosted_url if it's not null
           if [ "$EXISTING_HOSTED_URL" != "null" ] && [ "$EXISTING_HOSTED_URL" != "" ]; then
             echo "Preserving existing hosted_url: $EXISTING_HOSTED_URL"
-            FINAL_METADATA=$(echo "$AI_METADATA" | jq --arg url "$EXISTING_HOSTED_URL" '.hosted_url = $url')
-          else
-            FINAL_METADATA="$AI_METADATA"
+            FINAL_METADATA=$(echo "$FINAL_METADATA" | jq --arg url "$EXISTING_HOSTED_URL" '.hosted_url = $url')
           fi
           
           # Create the project-meta.json file

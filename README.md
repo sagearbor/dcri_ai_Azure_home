@@ -89,6 +89,60 @@ The hub will automatically use the hosted URL instead of the GitHub link.
 1. **generate-metadata.yml** - Analyzes repositories and creates metadata
 2. **update-projects.yml** - Rebuilds the project hub when projects.yml changes
 
+## Activity Metrics
+
+The hub automatically tracks project activity using git metrics:
+
+- **🔥 Hot** - Very active projects (80+ hotness score)
+- **⚡ Active** - Regularly updated projects (60+ hotness score) 
+- **📈 Growing** - Projects with steady activity (40+ hotness score)
+- **🆕 Updated** - Recently updated projects (20+ hotness score)
+- **💤 Quiet** - Low activity projects
+
+### Hotness Score Calculation
+- **Recent commits (40%)** - commits in last 30 days
+- **Recency (30%)** - days since last commit
+- **Contributors (20%)** - unique contributors in last 90 days  
+- **Releases (10%)** - releases in last 90 days
+
+## Future Enhancements
+
+### Website Traffic Analytics
+Plans to integrate visitor metrics for deployed applications:
+
+**Phase 1: Basic Tracking**
+- Integration with Azure Application Insights
+- Visitor count display on project cards
+- "Popular" badges for high-traffic projects
+
+**Phase 2: Advanced Analytics**
+- User engagement metrics (bounce rate, session duration)
+- Geographic distribution of users
+- Performance metrics (load times, errors)
+- Trending projects over time
+
+**Implementation Approach:**
+```javascript
+// Future: Add to each deployed app
+app.use(applicationInsights.middleware);
+
+// Report metrics back to hub
+fetch('/api/hub/metrics', {
+  method: 'POST',
+  body: JSON.stringify({
+    project: 'project-name',
+    visitors: monthlyVisitors,
+    engagement: avgSessionDuration
+  })
+});
+```
+
+**Requirements:**
+- Each deployed application includes Application Insights
+- Centralized metrics collection API
+- Privacy-compliant analytics (no PII)
+- Real-time or daily metric updates
+
 ## Contributing
 
 1. Fork the repository

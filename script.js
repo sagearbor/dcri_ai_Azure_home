@@ -1,14 +1,44 @@
 document.addEventListener('DOMContentLoaded', () => {
     const projectsContainer = document.getElementById('projects-container');
     const filtersContainer = document.getElementById('filters-container');
-    const filterTitleRow = filtersContainer.querySelector('.col-12'); // Keep the title row
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebarBtn = document.getElementById('toggleSidebar');
+    const closeSidebarBtn = document.getElementById('closeSidebar');
+    const resultCount = document.getElementById('result-count');
+    const projectCountBadge = document.getElementById('project-count-badge');
 
     let allProjects = [];
     let activeFilters = {};
+    let currentFilteredProjects = [];
 
     // Check URL for a flag to show hidden projects
     const urlParams = new URLSearchParams(window.location.search);
     const showHidden = urlParams.get('show') === 'hidden';
+
+    // Sidebar toggle functionality
+    toggleSidebarBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('sidebar-collapsed');
+        const icon = toggleSidebarBtn.querySelector('i');
+        icon.className = sidebar.classList.contains('sidebar-collapsed') ? 'bi bi-list' : 'bi bi-x-lg';
+    });
+
+    closeSidebarBtn.addEventListener('click', () => {
+        sidebar.classList.add('sidebar-collapsed');
+        const icon = toggleSidebarBtn.querySelector('i');
+        icon.className = 'bi bi-list';
+    });
+
+    // Close sidebar on mobile when clicking outside
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth < 768 && 
+            !sidebar.contains(e.target) && 
+            !toggleSidebarBtn.contains(e.target) && 
+            !sidebar.classList.contains('sidebar-collapsed')) {
+            sidebar.classList.add('sidebar-collapsed');
+            const icon = toggleSidebarBtn.querySelector('i');
+            icon.className = 'bi bi-list';
+        }
+    });
 
     // --- Data Fetching and Initialization ---
     fetch('projects.json')
@@ -32,6 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const allTags = extractTags(projectsToDisplay);
         createFilterUI(allTags);
+        
+        // Load saved filter preferences or default to all checked
+        loadFilterPreferences();
+        
         renderProjects(projectsToDisplay); // Show all public projects by default
     }
 
@@ -140,22 +174,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderProjects(projects) {
+        currentFilteredProjects = projects;
         projectsContainer.innerHTML = '';
+        
+        // Update counts
+        const totalProjects = showHidden ? allProjects.length : allProjects.filter(p => p.status !== 'hidden').length;
+        resultCount.textContent = `Showing ${projects.length} of ${totalProjects} projects`;
+        projectCountBadge.textContent = `${projects.length} projects`;
+        
         if (projects.length === 0) {
             projectsContainer.innerHTML = `<div class="col-12"><p class="text-muted text-center lead mt-5">No projects match the selected filters.</p></div>`;
             return;
         }
+        
         projects.forEach(project => {
             const card = document.createElement('div');
             card.className = 'col-md-4 project-card';
             if (project.status === 'hidden') {
                 card.dataset.status = 'hidden';
             }
+
+            // Generate activity badges
+            const activityBadges = generateActivityBadges(project.activity || {});
+            
+            // Format last activity
+            const lastActivity = formatLastActivity(project.activity);
+
             card.innerHTML = `
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm position-relative">
+                    ${activityBadges}
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title"><i class="bi ${project.icon || 'bi-box-seam'} me-2"></i>${project.title}</h5>
                         <p class="card-text text-body-secondary">${project.description}</p>
+                        ${lastActivity}
                         <div class="mt-auto pt-3">
                            <a href="${project.url}" class="btn btn-primary w-100" target="_blank" rel="noopener noreferrer">Go to Project</a>
                         </div>
@@ -164,6 +215,67 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             projectsContainer.appendChild(card);
         });
+    }
+
+    // --- Activity Badge Generation ---
+    function generateActivityBadges(activity) {
+        if (!activity || !activity.hotness_score) return '';
+        
+        const hotness = activity.hotness_score;
+        const commits = activity.commits_30d || 0;
+        const contributors = activity.contributors || 0;
+        
+        let badges = [];
+        
+        // Hotness badge
+        if (hotness >= 80) {
+            badges.push('<span class="badge bg-danger position-absolute top-0 end-0 m-2 hotness-badge" title="Very Active Project">🔥 Hot</span>');
+        } else if (hotness >= 60) {
+            badges.push('<span class="badge bg-warning position-absolute top-0 end-0 m-2 hotness-badge" title="Active Project">⚡ Active</span>');
+        } else if (hotness >= 40) {
+            badges.push('<span class="badge bg-success position-absolute top-0 end-0 m-2 hotness-badge" title="Regularly Updated">📈 Growing</span>');
+        } else if (hotness >= 20) {
+            badges.push('<span class="badge bg-info position-absolute top-0 end-0 m-2 hotness-badge" title="Some Recent Activity">🆕 Updated</span>');
+        } else if (hotness > 0) {
+            badges.push('<span class="badge bg-secondary position-absolute top-0 end-0 m-2 hotness-badge" title="Low Activity">💤 Quiet</span>');
+        }
+        
+        return badges.join('');
+    }
+    
+    function formatLastActivity(activity) {
+        if (!activity) return '';
+        
+        const commits = activity.commits_30d || 0;
+        const contributors = activity.contributors || 0;
+        const lastCommit = activity.last_commit;
+        
+        let activityText = [];
+        
+        if (commits > 0) {
+            activityText.push(`${commits} commits (30d)`);
+        }
+        
+        if (contributors > 1) {
+            activityText.push(`${contributors} contributors`);
+        }
+        
+        if (lastCommit && lastCommit !== 'unknown') {
+            const daysSince = Math.floor((new Date() - new Date(lastCommit)) / (1000 * 60 * 60 * 24));
+            if (daysSince === 0) {
+                activityText.push('Updated today');
+            } else if (daysSince === 1) {
+                activityText.push('Updated yesterday');
+            } else if (daysSince < 30) {
+                activityText.push(`Updated ${daysSince} days ago`);
+            }
+        }
+        
+        if (activityText.length > 0) {
+            return `<div class="activity-info text-muted small mb-2"><i class="bi bi-activity me-1"></i>${activityText.join(' • ')}</div>`;
+        }
+        
+        return '';
     }
 
     // --- Filtering Logic ---
@@ -179,10 +291,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const categories = [...new Set(Array.from(filtersContainer.querySelectorAll('.form-check-input')).map(cb => cb.dataset.category))];
         
         categories.forEach(category => {
+            const allBoxes = filtersContainer.querySelectorAll(`input[data-category="${category}"]`);
             const checkedBoxes = filtersContainer.querySelectorAll(`input[data-category="${category}"]:checked`);
             const values = Array.from(checkedBoxes).map(cb => cb.value);
             
-            if (values.length > 0) {
+            // If all are checked, don't filter (show everything for this category)
+            // If none are checked, don't filter (show everything for this category) 
+            // If some are checked, filter to show only those
+            if (values.length > 0 && values.length < allBoxes.length) {
                 activeFilters[category] = values;
             }
             
@@ -193,6 +309,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 badge.className = values.length > 0 ? 'badge bg-primary ms-auto me-3' : 'badge bg-secondary ms-auto me-3';
             }
         });
+        
+        // Save current filter state
+        saveFilterPreferences();
+    }
+    
+    function loadFilterPreferences() {
+        try {
+            const saved = localStorage.getItem('dcri-hub-filters');
+            if (saved) {
+                const preferences = JSON.parse(saved);
+                
+                // Apply saved preferences
+                Object.keys(preferences).forEach(category => {
+                    const values = preferences[category];
+                    values.forEach(value => {
+                        const checkbox = filtersContainer.querySelector(`input[data-category="${category}"][value="${value}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                });
+            } else {
+                // Default: check all boxes
+                filtersContainer.querySelectorAll('.form-check-input').forEach(cb => cb.checked = true);
+            }
+        } catch (e) {
+            // Default: check all boxes
+            filtersContainer.querySelectorAll('.form-check-input').forEach(cb => cb.checked = true);
+        }
+        
+        updateActiveFilters();
+    }
+    
+    function saveFilterPreferences() {
+        try {
+            const preferences = {};
+            const categories = [...new Set(Array.from(filtersContainer.querySelectorAll('.form-check-input')).map(cb => cb.dataset.category))];
+            
+            categories.forEach(category => {
+                const checkedBoxes = filtersContainer.querySelectorAll(`input[data-category="${category}"]:checked`);
+                preferences[category] = Array.from(checkedBoxes).map(cb => cb.value);
+            });
+            
+            localStorage.setItem('dcri-hub-filters', JSON.stringify(preferences));
+        } catch (e) {
+            // Ignore localStorage errors
+            console.warn('Could not save filter preferences:', e);
+        }
     }
     
     function applyFilters() {
