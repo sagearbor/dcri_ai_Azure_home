@@ -31,3 +31,33 @@ body {
     background-color: #0b5ed7;
     border-color: #0a58ca;
 }
+
+/* Filter accordion styling */
+.accordion-button:not(.collapsed) {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
+.accordion-button:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check {
+    padding: 0.25rem 0;
+}
+
+.form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.accordion-body {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Badge styling for filter counts */
+.badge {
+    min-width: 2rem;
+}

@@ -55,54 +55,86 @@ document.addEventListener('DOMContentLoaded', () => {
             filtersContainer.removeChild(filtersContainer.lastChild);
         }
 
-        for (const category in allTags) {
-            const friendlyCat = category.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            const options = Array.from(allTags[category]).sort().map(tag =>
-                `<option value="${tag}">${tag}</option>`
-            ).join('');
+        // Create accordion container
+        const accordionContainer = document.createElement('div');
+        accordionContainer.className = 'col-12';
+        accordionContainer.innerHTML = '<div class="accordion" id="filtersAccordion"></div>';
+        filtersContainer.appendChild(accordionContainer);
+        
+        const accordion = accordionContainer.querySelector('.accordion');
 
-            const filterGroup = document.createElement('div');
-            filterGroup.className = 'col-md-4';
-            filterGroup.innerHTML = `
-                <div class="form-floating">
-                    <select class="form-select" id="filter-${category}" data-category="${category}" multiple>
-                        ${options}
-                    </select>
-                    <label for="filter-${category}">${friendlyCat}</label>
-                    <div class="form-text mt-1">
-                        <small>
-                            <a href="#" class="select-all-link me-2" data-category="${category}">Select All</a>
-                            <a href="#" class="select-none-link" data-category="${category}">Select None</a>
-                        </small>
+        Object.keys(allTags).forEach((category, index) => {
+            const friendlyCat = category.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            const categoryId = `filter-${category}`;
+            const tags = Array.from(allTags[category]).sort();
+
+            const checkboxes = tags.map(tag => {
+                const sanitizedTag = tag.replace(/[^a-zA-Z0-9]/g, '-');
+                return `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="${tag}" 
+                               id="${categoryId}-${sanitizedTag}" data-category="${category}">
+                        <label class="form-check-label" for="${categoryId}-${sanitizedTag}">
+                            ${tag}
+                        </label>
+                    </div>
+                `;
+            }).join('');
+
+            const accordionItem = document.createElement('div');
+            accordionItem.className = 'accordion-item';
+            accordionItem.innerHTML = `
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                            data-bs-target="#collapse-${category}" aria-expanded="false" 
+                            aria-controls="collapse-${category}">
+                        <i class="bi bi-funnel me-2"></i>${friendlyCat}
+                        <span class="badge bg-secondary ms-auto me-3" id="badge-${category}">0</span>
+                    </button>
+                </h2>
+                <div id="collapse-${category}" class="accordion-collapse collapse" 
+                     data-bs-parent="#filtersAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary me-2 select-all-btn" 
+                                    data-category="${category}">Select All</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary select-none-btn" 
+                                    data-category="${category}">Clear All</button>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                ${checkboxes}
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
-            filtersContainer.appendChild(filterGroup);
-        }
+            accordion.appendChild(accordionItem);
+        });
 
-        // Add event listeners to new dropdowns
-        filtersContainer.querySelectorAll('select').forEach(select => {
-            select.addEventListener('change', handleFilterChange);
+        // Add event listeners to checkboxes
+        filtersContainer.querySelectorAll('.form-check-input').forEach(checkbox => {
+            checkbox.addEventListener('change', handleCheckboxChange);
         });
 
         // Add select all/none functionality
-        filtersContainer.querySelectorAll('.select-all-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
+        filtersContainer.querySelectorAll('.select-all-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
                 const category = e.target.dataset.category;
-                const select = document.getElementById(`filter-${category}`);
-                Array.from(select.options).forEach(option => option.selected = true);
-                handleFilterChange({ target: select });
+                const checkboxes = filtersContainer.querySelectorAll(`input[data-category="${category}"]`);
+                checkboxes.forEach(cb => cb.checked = true);
+                updateActiveFilters();
+                applyFilters();
             });
         });
 
-        filtersContainer.querySelectorAll('.select-none-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
+        filtersContainer.querySelectorAll('.select-none-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
                 const category = e.target.dataset.category;
-                const select = document.getElementById(`filter-${category}`);
-                Array.from(select.options).forEach(option => option.selected = false);
-                handleFilterChange({ target: select });
+                const checkboxes = filtersContainer.querySelectorAll(`input[data-category="${category}"]`);
+                checkboxes.forEach(cb => cb.checked = false);
+                updateActiveFilters();
+                applyFilters();
             });
         });
     }
@@ -135,16 +167,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Filtering Logic ---
-    function handleFilterChange(e) {
-        const category = e.target.dataset.category;
-        const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
-
-        if (selectedOptions.length > 0) {
-            activeFilters[category] = selectedOptions;
-        } else {
-            delete activeFilters[category];
-        }
+    function handleCheckboxChange(e) {
+        updateActiveFilters();
         applyFilters();
+    }
+
+    function updateActiveFilters() {
+        activeFilters = {};
+        
+        // Group checked checkboxes by category
+        const categories = [...new Set(Array.from(filtersContainer.querySelectorAll('.form-check-input')).map(cb => cb.dataset.category))];
+        
+        categories.forEach(category => {
+            const checkedBoxes = filtersContainer.querySelectorAll(`input[data-category="${category}"]:checked`);
+            const values = Array.from(checkedBoxes).map(cb => cb.value);
+            
+            if (values.length > 0) {
+                activeFilters[category] = values;
+            }
+            
+            // Update badge count
+            const badge = document.getElementById(`badge-${category}`);
+            if (badge) {
+                badge.textContent = values.length;
+                badge.className = values.length > 0 ? 'badge bg-primary ms-auto me-3' : 'badge bg-secondary ms-auto me-3';
+            }
+        });
     }
     
     function applyFilters() {

@@ -125,7 +125,7 @@ jobs:
           - name: Max 50 chars, no quotes in content
           - description: Max 100 chars, no quotes in content, 1-2 sentences
           - technologies: Array of 2-8 tech names (frameworks, languages, tools, databases, cloud services)
-          - category: Array of 1-3 categories from: "web-app", "library", "cli-tool", "data-analysis", "api", "mobile-app", "dashboard", "automation", "ml-ai", "other"
+          - category: Array of 1-3 categories from: "web-app", "api", "library", "cli-tool", "data-analysis", "dashboard", "chatbot", "research-tool", "medical-app", "automation", "ml-ai", "prototype", "other"
           - status: MUST be one of: "active", "maintenance", "archived"
           - language: Array of programming languages used (primary first)
           - hosted_url: Set to null (will be added when deployed)

@@ -65,8 +65,8 @@ jobs:
               status: (.status // "active"),
               tags: {
                 technology: (.technologies // ["unknown"]),
-                category: [(.category // "other")],
-                language: [(.language // "unknown")]
+                category: (if (.category | type) == "array" then (.category | unique) else [(.category // "other")]),
+                language: (if (.language | type) == "array" then (.language | unique) else [(.language // "unknown")])
               }
             } + $overrides')
             
