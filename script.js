@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.getElementById('sidebar');
     const toggleSidebarBtn = document.getElementById('toggleSidebar');
     const closeSidebarBtn = document.getElementById('closeSidebar');
+    const floatingToggle = document.getElementById('floatingToggle');
+    const mainContent = document.getElementById('main-content');
     const resultCount = document.getElementById('result-count');
     const projectCountBadge = document.getElementById('project-count-badge');
 
@@ -16,16 +18,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const showHidden = urlParams.get('show') === 'hidden';
 
     // Sidebar toggle functionality
-    toggleSidebarBtn.addEventListener('click', () => {
+    function toggleSidebar() {
         sidebar.classList.toggle('sidebar-collapsed');
+        
+        // Update hamburger icon
         const icon = toggleSidebarBtn.querySelector('i');
         icon.className = sidebar.classList.contains('sidebar-collapsed') ? 'bi bi-list' : 'bi bi-x-lg';
-    });
+        
+        // Show/hide floating button
+        floatingToggle.style.display = sidebar.classList.contains('sidebar-collapsed') ? 'flex' : 'none';
+    }
+
+    toggleSidebarBtn.addEventListener('click', toggleSidebar);
+    floatingToggle.addEventListener('click', toggleSidebar);
 
     closeSidebarBtn.addEventListener('click', () => {
         sidebar.classList.add('sidebar-collapsed');
         const icon = toggleSidebarBtn.querySelector('i');
         icon.className = 'bi bi-list';
+        floatingToggle.style.display = 'flex';
     });
 
     // Close sidebar on mobile when clicking outside
@@ -33,12 +44,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.innerWidth < 768 && 
             !sidebar.contains(e.target) && 
             !toggleSidebarBtn.contains(e.target) && 
+            !floatingToggle.contains(e.target) &&
             !sidebar.classList.contains('sidebar-collapsed')) {
             sidebar.classList.add('sidebar-collapsed');
             const icon = toggleSidebarBtn.querySelector('i');
             icon.className = 'bi bi-list';
+            floatingToggle.style.display = 'flex';
         }
     });
+
+    // Initialize sidebar state
+    if (window.innerWidth < 768) {
+        sidebar.classList.add('sidebar-collapsed');
+        floatingToggle.style.display = 'flex';
+    }
 
     // --- Data Fetching and Initialization ---
     fetch('projects.json')
@@ -189,7 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         projects.forEach(project => {
             const card = document.createElement('div');
-            card.className = 'col-md-4 project-card';
+            // Use simple class since we're using CSS Grid instead of Bootstrap columns
+            card.className = 'project-card';
             if (project.status === 'hidden') {
                 card.dataset.status = 'hidden';
             }
