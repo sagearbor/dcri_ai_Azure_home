@@ -207,6 +207,7 @@ jobs:
 
       - name: Generate Metadata with AI
         id: generate-metadata
+        continue-on-error: true
         run: |
           # Use GitHub Models API to generate metadata
           echo "Calling GitHub Models API..."
@@ -230,14 +231,34 @@ jobs:
             }')
           
           echo "Sending payload to API..."
-          RESPONSE=$(curl -s -X POST \
+          
+          # Add timeout and better error handling
+          HTTP_CODE=$(curl -s -w "%{http_code}" -o response.json -X POST \
+            --max-time 30 \
+            --retry 2 \
+            --retry-delay 5 \
             -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD" \
             "https://models.inference.ai.azure.com/chat/completions")
           
-          # Log the response for debugging
-          echo "API Response: $RESPONSE"
+          echo "HTTP Status Code: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            RESPONSE=$(cat response.json)
+            echo "API Response: $RESPONSE"
+          else
+            echo "API call failed with status $HTTP_CODE"
+            echo "Response body: $(cat response.json)"
+            
+            # Use fallback metadata for failed API calls
+            echo "⚠️ GitHub Models API unavailable, generating basic metadata from repository analysis"
+            REPO_NAME=$(basename "${{ matrix.repo_url }}")
+            
+            # Create basic metadata from what we know
+            BASIC_METADATA="{\"name\":\"$REPO_NAME\",\"description\":\"Auto-generated from repository analysis\",\"technologies\":[\"unknown\"],\"category\":[\"other\"],\"status\":\"active\",\"language\":[\"unknown\"],\"hosted_url\":null,\"activity\":{\"commits_30d\":0,\"last_commit\":\"unknown\",\"contributors\":0,\"hotness_score\":0}}"
+            RESPONSE='{"choices":[{"message":{"content":"'$BASIC_METADATA'"}}]}'
+          fi
           
           # Extract the generated JSON from the response
           RAW_CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content' 2>/dev/null || echo '{"error":"API_failed"}')
@@ -253,7 +274,7 @@ jobs:
           else
             echo "❌ Invalid JSON from AI, using fallback"
             REPO_NAME=$(basename "${{ matrix.repo_url }}")
-            METADATA="{\"name\":\"$REPO_NAME\",\"description\":\"Auto-generated metadata\",\"technologies\":[\"unknown\"],\"category\":\"other\",\"status\":\"active\",\"language\":\"unknown\"}"
+            METADATA="{\"name\":\"$REPO_NAME\",\"description\":\"Auto-generated metadata\",\"technologies\":[\"unknown\"],\"category\":[\"other\"],\"status\":\"active\",\"language\":[\"unknown\"],\"hosted_url\":null,\"activity\":{\"commits_30d\":0,\"last_commit\":\"unknown\",\"contributors\":0,\"hotness_score\":0}}"
           fi
           
           # Save the metadata (properly escaped for GitHub Actions)
