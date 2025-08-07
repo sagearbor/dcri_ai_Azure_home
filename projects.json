@@ -19,89 +19,112 @@
   },
   {
     "title": "Clinical Trial P-Value Explorer",
-    "description": "This app estimates participants and effect size for trials. Users can interactively calculate p-values.",
+    "description": "This app helps estimate trial participants and effect sizes. It includes an interactive p-value calculator.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/clinical-trial-pvalue-explorer",
     "status": "active",
     "tags": {
       "technology": [
+        "Python",
         "FastAPI",
         "Streamlit",
-        "Python",
-        "Git",
         "Gemini API"
       ],
       "category": [
-        "web-app"
+        [
+          "web-app",
+          "api",
+          "data-analysis"
+        ]
       ],
       "language": [
-        "Python"
+        [
+          "Python"
+        ]
       ]
     }
   },
   {
     "title": "Multi-Agent Development Template",
-    "description": "A template for multi-agent software development with orchestration capabilities.",
+    "description": "Template for multi-agent software development using orchestration capabilities.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/multiAgent_AgileTeam_Start",
     "status": "active",
     "tags": {
       "technology": [
-        "Python",
+        "Claude Code",
         "YAML",
-        "Git",
-        "Docker",
-        "CI/CD"
+        "Python",
+        "CI/CD",
+        "Git"
       ],
       "category": [
-        "library"
+        [
+          "web-app",
+          "automation",
+          "other"
+        ]
       ],
       "language": [
-        "Python"
+        [
+          "Python"
+        ]
       ]
     }
   },
   {
     "title": "Faculty Research Opportunity Notifier",
-    "description": "AI-driven system connecting faculty with research funding opportunities.",
+    "description": "An AI-driven system for connecting faculty with research funding opportunities.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/PIrate_research",
     "status": "active",
     "tags": {
       "technology": [
+        "Python",
         "FastAPI",
         "Docker",
         "Google ADK",
-        "MCP",
-        "Python"
+        "Model Context Protocol"
       ],
       "category": [
-        "web-app"
+        [
+          "web-app",
+          "api",
+          "automation"
+        ]
       ],
       "language": [
-        "Python"
+        [
+          "Python"
+        ]
       ]
     }
   },
   {
     "title": "dcri-mcp-tools",
-    "description": "A modular tool server for DCRI clinical research on Azure.",
+    "description": "Modular tool server for DCRI clinical research on Azure. Accessible via REST API.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/dcri-mcp-tools",
     "status": "active",
     "tags": {
       "technology": [
+        "Python",
         "Flask",
         "Docker",
-        "Python",
         "Azure",
-        "REST"
+        "Git"
       ],
       "category": [
-        "api"
+        [
+          "web-app",
+          "api",
+          "automation"
+        ]
       ],
       "language": [
-        "Python"
+        [
+          "Python"
+        ]
       ]
     }
   },
@@ -125,23 +148,33 @@
   },
   {
     "title": "Medschool ArborTester",
-    "description": "An AI chatbot for medical board exam preparation, offering personalized feedback.",
+    "description": "An AI chatbot for medical students to prepare for board exams by engaging with questions.",
     "icon": "bi-box-seam",
     "url": "https://arbor-tester.prod.azure.com",
     "status": "active",
     "tags": {
       "technology": [
-        "Python",
-        "React",
         "Docker",
+        "Python",
+        "Flask",
+        "React",
         "AWS",
+        "GCP",
+        "Azure",
         "OAuth"
       ],
       "category": [
-        "web-app"
+        [
+          "web-app",
+          "automation",
+          "ml-ai"
+        ]
       ],
       "language": [
-        "Python"
+        [
+          "Python",
+          "JavaScript"
+        ]
       ]
     }
   }
