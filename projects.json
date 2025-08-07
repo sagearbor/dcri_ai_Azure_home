@@ -19,7 +19,7 @@
   },
   {
     "title": "Clinical Trial P-Value Explorer",
-    "description": "This app helps estimate trial participants and effect sizes. It includes an interactive p-value calculator.",
+    "description": "This tool estimates p-values for clinical trials using AI-generated inputs.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/clinical-trial-pvalue-explorer",
     "status": "active",
@@ -31,22 +31,18 @@
         "Gemini API"
       ],
       "category": [
-        [
-          "web-app",
-          "api",
-          "data-analysis"
-        ]
+        "api",
+        "data-analysis",
+        "web-app"
       ],
       "language": [
-        [
-          "Python"
-        ]
+        "Python"
       ]
     }
   },
   {
     "title": "Multi-Agent Development Template",
-    "description": "Template for multi-agent software development using orchestration capabilities.",
+    "description": "A template for multi-agent software development using orchestration. It includes various specialized agents for different roles.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/multiAgent_AgileTeam_Start",
     "status": "active",
@@ -54,27 +50,21 @@
       "technology": [
         "Claude Code",
         "YAML",
-        "Python",
-        "CI/CD",
-        "Git"
+        "Python"
       ],
       "category": [
-        [
-          "web-app",
-          "automation",
-          "other"
-        ]
+        "automation",
+        "prototype",
+        "web-app"
       ],
       "language": [
-        [
-          "Python"
-        ]
+        "Python"
       ]
     }
   },
   {
     "title": "Faculty Research Opportunity Notifier",
-    "description": "An AI-driven system for connecting faculty with research funding opportunities.",
+    "description": "An AI-driven system to connect faculty with research funding opportunities.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/PIrate_research",
     "status": "active",
@@ -83,48 +73,39 @@
         "Python",
         "FastAPI",
         "Docker",
-        "Google ADK",
+        "Google Agent Development Kit",
         "Model Context Protocol"
       ],
       "category": [
-        [
-          "web-app",
-          "api",
-          "automation"
-        ]
+        "api",
+        "automation",
+        "research-tool"
       ],
       "language": [
-        [
-          "Python"
-        ]
+        "Python"
       ]
     }
   },
   {
     "title": "dcri-mcp-tools",
-    "description": "Modular tool server for DCRI clinical research on Azure. Accessible via REST API.",
+    "description": "A tool server for DCRI clinical research, designed for Azure deployment.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/dcri-mcp-tools",
     "status": "active",
     "tags": {
       "technology": [
-        "Python",
         "Flask",
         "Docker",
         "Azure",
+        "Python",
         "Git"
       ],
       "category": [
-        [
-          "web-app",
-          "api",
-          "automation"
-        ]
+        "api",
+        "web-app"
       ],
       "language": [
-        [
-          "Python"
-        ]
+        "Python"
       ]
     }
   },
@@ -148,33 +129,26 @@
   },
   {
     "title": "Medschool ArborTester",
-    "description": "An AI chatbot for medical students to prepare for board exams by engaging with questions.",
+    "description": "An interactive chatbot for medical board exam prep. Engage with clinical questions and track performance.",
     "icon": "bi-box-seam",
     "url": "https://arbor-tester.prod.azure.com",
     "status": "active",
     "tags": {
       "technology": [
         "Docker",
-        "Python",
-        "Flask",
-        "React",
-        "AWS",
+        "AI",
         "GCP",
         "Azure",
-        "OAuth"
+        "AWS"
       ],
       "category": [
-        [
-          "web-app",
-          "automation",
-          "ml-ai"
-        ]
+        "chatbot",
+        "dashboard",
+        "data-analysis"
       ],
       "language": [
-        [
-          "Python",
-          "JavaScript"
-        ]
+        "JavaScript",
+        "Python"
       ]
     }
   }
