@@ -19,7 +19,7 @@
   },
   {
     "title": "Clinical Trial P-Value Explorer",
-    "description": "This tool estimates p-values for clinical trials using AI-generated inputs.",
+    "description": "This tool estimates participants for clinical trials and computes p-values.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/clinical-trial-pvalue-explorer",
     "status": "active",
@@ -27,8 +27,7 @@
       "technology": [
         "Python",
         "FastAPI",
-        "Streamlit",
-        "Gemini API"
+        "Streamlit"
       ],
       "category": [
         "api",
@@ -42,7 +41,7 @@
   },
   {
     "title": "Multi-Agent Development Template",
-    "description": "A template for multi-agent software development using orchestration. It includes various specialized agents for different roles.",
+    "description": "This template facilitates multi-agent software development. It streamlines workflows with specialized agents.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/multiAgent_AgileTeam_Start",
     "status": "active",
@@ -50,34 +49,34 @@
       "technology": [
         "Claude Code",
         "YAML",
-        "Python"
+        "Python",
+        "Git",
+        "CI/CD"
       ],
       "category": [
         "automation",
-        "prototype",
         "web-app"
       ],
       "language": [
-        "Python"
+        "Python",
+        "YAML"
       ]
     }
   },
   {
     "title": "Faculty Research Opportunity Notifier",
-    "description": "An AI-driven system to connect faculty with research funding opportunities.",
+    "description": "An AI-driven system connecting faculty with research funding. It identifies grants and suggests collaborators.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/PIrate_research",
     "status": "active",
     "tags": {
       "technology": [
-        "Python",
         "FastAPI",
         "Docker",
-        "Google Agent Development Kit",
+        "Google ADK",
         "Model Context Protocol"
       ],
       "category": [
-        "api",
         "automation",
         "research-tool"
       ],
@@ -88,7 +87,7 @@
   },
   {
     "title": "dcri-mcp-tools",
-    "description": "A tool server for DCRI clinical research, designed for Azure deployment.",
+    "description": "A modular tool server for DCRI clinical research using MCP and Azure.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/dcri-mcp-tools",
     "status": "active",
@@ -98,10 +97,11 @@
         "Docker",
         "Azure",
         "Python",
-        "Git"
+        "Microsoft Graph API"
       ],
       "category": [
         "api",
+        "automation",
         "web-app"
       ],
       "language": [
@@ -129,7 +129,7 @@
   },
   {
     "title": "Medschool ArborTester",
-    "description": "An interactive chatbot for medical board exam prep. Engage with clinical questions and track performance.",
+    "description": "An AI chatbot for medical students to prepare for board exams.",
     "icon": "bi-box-seam",
     "url": "https://arbor-tester.prod.azure.com",
     "status": "active",
@@ -137,14 +137,15 @@
       "technology": [
         "Docker",
         "AI",
+        "OAuth",
         "GCP",
-        "Azure",
-        "AWS"
+        "AWS",
+        "Azure"
       ],
       "category": [
         "chatbot",
-        "dashboard",
-        "data-analysis"
+        "data-analysis",
+        "education"
       ],
       "language": [
         "JavaScript",
