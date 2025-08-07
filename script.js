@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         for (const category in allTags) {
-            const BfriendlyCat = category.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            const friendlyCat = category.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
             const options = Array.from(allTags[category]).sort().map(tag =>
                 `<option value="${tag}">${tag}</option>`
             ).join('');
@@ -65,11 +65,16 @@ document.addEventListener('DOMContentLoaded', () => {
             filterGroup.className = 'col-md-4';
             filterGroup.innerHTML = `
                 <div class="form-floating">
-                    <select class="form-select" id="filter-${category}" data-category="${category}">
-                        <option value="" selected>All ${BfriendlyCat}</option>
+                    <select class="form-select" id="filter-${category}" data-category="${category}" multiple>
                         ${options}
                     </select>
-                    <label for="filter-${category}">${BfriendlyCat}</label>
+                    <label for="filter-${category}">${friendlyCat}</label>
+                    <div class="form-text mt-1">
+                        <small>
+                            <a href="#" class="select-all-link me-2" data-category="${category}">Select All</a>
+                            <a href="#" class="select-none-link" data-category="${category}">Select None</a>
+                        </small>
+                    </div>
                 </div>
             `;
             filtersContainer.appendChild(filterGroup);
@@ -78,6 +83,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add event listeners to new dropdowns
         filtersContainer.querySelectorAll('select').forEach(select => {
             select.addEventListener('change', handleFilterChange);
+        });
+
+        // Add select all/none functionality
+        filtersContainer.querySelectorAll('.select-all-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const category = e.target.dataset.category;
+                const select = document.getElementById(`filter-${category}`);
+                Array.from(select.options).forEach(option => option.selected = true);
+                handleFilterChange({ target: select });
+            });
+        });
+
+        filtersContainer.querySelectorAll('.select-none-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const category = e.target.dataset.category;
+                const select = document.getElementById(`filter-${category}`);
+                Array.from(select.options).forEach(option => option.selected = false);
+                handleFilterChange({ target: select });
+            });
         });
     }
 
@@ -111,10 +137,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Filtering Logic ---
     function handleFilterChange(e) {
         const category = e.target.dataset.category;
-        const value = e.target.value;
+        const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
 
-        if (value) {
-            activeFilters[category] = value;
+        if (selectedOptions.length > 0) {
+            activeFilters[category] = selectedOptions;
         } else {
             delete activeFilters[category];
         }
@@ -125,10 +151,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const baseProjects = showHidden ? allProjects : allProjects.filter(p => p.status !== 'hidden');
 
         const filteredProjects = baseProjects.filter(project => {
-            // .every() implements the AND logic
-            return Object.keys(activeFilters).every(category => {
-                if (!project.tags || !project.tags[category]) return false;
-                return project.tags[category].includes(activeFilters[category]);
+            // AND logic between categories, OR logic within each category
+            return Object.keys(activeFilters).every(filterCategory => {
+                if (!project.tags || !project.tags[filterCategory]) return false;
+                
+                // Check if project has ANY of the selected values for this category (OR logic)
+                return activeFilters[filterCategory].some(selectedValue => 
+                    project.tags[filterCategory].includes(selectedValue)
+                );
             });
         });
         renderProjects(filteredProjects);

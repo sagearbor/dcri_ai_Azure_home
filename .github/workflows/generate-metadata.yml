@@ -119,16 +119,16 @@ jobs:
           
           Generate metadata for this software project. Use EXACTLY this JSON structure (single line, no formatting):
           
-          {"name":"PROJECT_NAME","description":"BRIEF_DESCRIPTION","technologies":["TECH1","TECH2"],"category":"CATEGORY","status":"STATUS","language":"LANGUAGE","hosted_url":"URL_OR_NULL"}
+          {"name":"PROJECT_NAME","description":"BRIEF_DESCRIPTION","technologies":["TECH1","TECH2","TECH3"],"category":["CAT1","CAT2"],"status":"STATUS","language":["LANG1","LANG2"],"hosted_url":null}
           
           Field requirements:
           - name: Max 50 chars, no quotes in content
           - description: Max 100 chars, no quotes in content, 1-2 sentences
-          - technologies: Max 5 items, common tech names only
-          - category: MUST be one of: "web-app", "library", "cli-tool", "data-analysis", "api", "mobile-app", "other"
+          - technologies: Array of 2-8 tech names (frameworks, languages, tools, databases, cloud services)
+          - category: Array of 1-3 categories from: "web-app", "library", "cli-tool", "data-analysis", "api", "mobile-app", "dashboard", "automation", "ml-ai", "other"
           - status: MUST be one of: "active", "maintenance", "archived"
-          - language: Primary programming language, single word
-          - hosted_url: If this is a web app that can be deployed, set to null (we'll add the URL later when deployed). Otherwise set to null.
+          - language: Array of programming languages used (primary first)
+          - hosted_url: Set to null (will be added when deployed)
           
           Repository: ${{ matrix.repo_url }}
           README: ${{ steps.gather-info.outputs.readme_content }}
