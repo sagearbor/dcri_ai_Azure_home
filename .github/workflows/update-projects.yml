@@ -61,12 +61,12 @@ jobs:
               title: (.name // "Unknown Project"),
               description: (.description // "No description available"),
               icon: (.icon // "bi-box-seam"),
-              url: (if .hosted_url then .hosted_url else $repo_url end),
+              url: (if .hosted_url and .hosted_url != null then .hosted_url else $repo_url end),
               status: (.status // "active"),
               tags: {
                 technology: (.technologies // ["unknown"]),
-                category: (if (.category | type) == "array" then (.category | unique) else [(.category // "other")]),
-                language: (if (.language | type) == "array" then (.language | unique) else [(.language // "unknown")])
+                category: (if (.category | type) == "array" then .category | unique else [.category // "other"] end),
+                language: (if (.language | type) == "array" then .language | unique else [.language // "unknown"] end)
               }
             } + $overrides')
             
