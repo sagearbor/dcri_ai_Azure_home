@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Load saved filter preferences or default to all checked
         loadFilterPreferences();
         
-        renderProjects(projectsToDisplay); // Show all public projects by default
+        // Don't render projects here - loadFilterPreferences() now calls applyFilters()
     }
 
     // --- UI Generation ---
@@ -316,11 +316,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const values = Array.from(checkedBoxes).map(cb => cb.value);
             
             // If all are checked, don't filter (show everything for this category)
-            // If none are checked, don't filter (show everything for this category) 
+            // If none are checked, filter to show nothing for this category
             // If some are checked, filter to show only those
             if (values.length > 0 && values.length < allBoxes.length) {
+                // Some checked - filter to show only selected values
                 activeFilters[category] = values;
+            } else if (values.length === 0) {
+                // None checked - filter to show nothing (empty array means no matches)
+                activeFilters[category] = [];
             }
+            // If values.length === allBoxes.length (all checked), don't add to activeFilters (show all)
             
             // Update badge count
             const badge = document.getElementById(`badge-${category}`);
@@ -360,6 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         updateActiveFilters();
+        applyFilters();
     }
     
     function saveFilterPreferences() {
@@ -385,10 +391,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const filteredProjects = baseProjects.filter(project => {
             // AND logic between categories, OR logic within each category
             return Object.keys(activeFilters).every(filterCategory => {
+                const selectedValues = activeFilters[filterCategory];
+                
+                // If empty array, nothing should match for this category
+                if (selectedValues.length === 0) return false;
+                
                 if (!project.tags || !project.tags[filterCategory]) return false;
                 
                 // Check if project has ANY of the selected values for this category (OR logic)
-                return activeFilters[filterCategory].some(selectedValue => 
+                return selectedValues.some(selectedValue => 
                     project.tags[filterCategory].includes(selectedValue)
                 );
             });

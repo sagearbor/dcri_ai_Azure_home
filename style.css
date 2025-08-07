@@ -158,8 +158,19 @@ main {
 
 /* Responsive grid adjustments */
 @media (max-width: 767.98px) {
+    body {
+        overflow-x: hidden;
+    }
     #projects-container {
         grid-template-columns: 1fr; /* 1 column on mobile */
+    }
+    #projects-container .project-card {
+        min-width: 0;
+        max-width: 100%;
+    }
+    .card {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 }
 
@@ -198,23 +209,39 @@ main {
 /* --- Mobile & Activity Styles (Unchanged) --- */
 @media (max-width: 767.98px) {
     main {
-        flex-direction: column;
+        flex-direction: row; /* Keep flex row even on mobile */
+        position: relative;
     }
     .sidebar {
-        position: fixed;
+        position: fixed !important;
         top: 56px;
         left: 0;
         height: calc(100vh - 56px);
         z-index: 1060;
         transition: transform 0.3s ease;
+        margin-left: 0 !important; /* Reset any margin on mobile */
+        min-width: 300px;
     }
     .sidebar-collapsed {
-        transform: translateX(-300px);
-        margin-left: 0;
+        transform: translateX(-300px) !important;
+        margin-left: 0 !important;
     }
     #main-content {
         flex: 1;
+        width: 100vw !important;
+        margin-left: 0 !important; /* No margin on mobile - sidebar is overlay */
+        min-width: 0;
+        max-width: 100vw;
+        position: relative;
+    }
+    .content-body .container-fluid {
+        padding: 1rem;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+    #projects-container {
         width: 100%;
+        max-width: 100%;
     }
 }
 
