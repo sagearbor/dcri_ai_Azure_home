@@ -128,37 +128,42 @@
   },
   {
     "title": "dcriCrawl",
-    "description": "Project repository",
+    "description": "A Python-based web crawler for AI and data policy keywords.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/dcriCrawl",
     "status": "active",
     "tags": {
       "technology": [
-        "unknown"
+        "Python",
+        "Streamlit",
+        "Playwright",
+        "spaCy"
       ],
       "category": [
-        "other"
+        "data-analysis",
+        "web-app"
       ],
       "language": [
-        "unknown"
+        "Python"
       ]
     }
   },
   {
     "title": "concatGitFiles",
-    "description": "Project repository",
+    "description": "A simple Python script to consolidate repository files into a single text file.",
     "icon": "bi-box-seam",
     "url": "https://arbor-tester.prod.azure.com",
     "status": "active",
     "tags": {
       "technology": [
-        "unknown"
+        "Python"
       ],
       "category": [
-        "other"
+        "automation",
+        "cli-tool"
       ],
       "language": [
-        "unknown"
+        "Python"
       ]
     }
   }
