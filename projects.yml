@@ -15,7 +15,8 @@
 - repo: https://github.com/sagearbor/PIrate_research
 - repo: https://github.com/sagearbor/dcri-mcp-tools
 - repo: https://github.com/sagearbor/clinicalTrials_s2f
+- repo: https://github.com/sagearbor/dcriCrawl
+- repo: https://github.com/sagearbor/concatGitFiles
 
-- repo: https://github.com/sagearbor/Medschool_ArborTester
   overrides:
     url: "https://arbor-tester.prod.azure.com"
