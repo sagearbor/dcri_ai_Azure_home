@@ -64,24 +64,20 @@
     }
   },
   {
-    "title": "Faculty Research Opportunity Notifier",
-    "description": "An AI-driven system connecting faculty with research funding. It identifies grants and suggests collaborators.",
+    "title": "PIrate_research",
+    "description": "Project repository",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/PIrate_research",
     "status": "active",
     "tags": {
       "technology": [
-        "FastAPI",
-        "Docker",
-        "Google ADK",
-        "Model Context Protocol"
+        "unknown"
       ],
       "category": [
-        "automation",
-        "research-tool"
+        "other"
       ],
       "language": [
-        "Python"
+        "unknown"
       ]
     }
   },
@@ -110,10 +106,31 @@
     }
   },
   {
-    "title": "clinicalTrials_s2f",
-    "description": "Project repository",
+    "title": "Agentic AI for Clinical Trial Automation",
+    "description": "This project automates and improves clinical trial efficiency.",
     "icon": "bi-box-seam",
     "url": "https://github.com/sagearbor/clinicalTrials_s2f",
+    "status": "active",
+    "tags": {
+      "technology": [
+        "Python",
+        "GitHub Actions",
+        "JSON"
+      ],
+      "category": [
+        "automation",
+        "ml-ai"
+      ],
+      "language": [
+        "Python"
+      ]
+    }
+  },
+  {
+    "title": "dcriCrawl",
+    "description": "Project repository",
+    "icon": "bi-box-seam",
+    "url": "https://github.com/sagearbor/dcriCrawl",
     "status": "active",
     "tags": {
       "technology": [
@@ -128,28 +145,20 @@
     }
   },
   {
-    "title": "Medschool ArborTester",
-    "description": "An AI chatbot for medical students to prepare for board exams.",
+    "title": "concatGitFiles",
+    "description": "Project repository",
     "icon": "bi-box-seam",
     "url": "https://arbor-tester.prod.azure.com",
     "status": "active",
     "tags": {
       "technology": [
-        "Docker",
-        "AI",
-        "OAuth",
-        "GCP",
-        "AWS",
-        "Azure"
+        "unknown"
       ],
       "category": [
-        "chatbot",
-        "data-analysis",
-        "education"
+        "other"
       ],
       "language": [
-        "JavaScript",
-        "Python"
+        "unknown"
       ]
     }
   }
